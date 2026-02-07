@@ -1,0 +1,120 @@
+# Video Stage Training Configuration
+# Stage 2: Fine-tune on video understanding (14% text, 33% video)
+
+training:
+  stage: video
+  output_dir: ./checkpoints/video_stage
+
+  # Resume from vision stage
+  resume_from: ./checkpoints/vision_stage
+
+  # Batch settings (smaller for video memory)
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 8
+  effective_batch_size: 256  # 4 * 8 * 8 GPUs
+
+  # Learning rate (lower for fine-tuning)
+  learning_rate: 2.0e-5
+  lr_scheduler_type: cosine
+  warmup_steps: 500
+  warmup_ratio: 0.02
+
+  # Training duration
+  max_steps: 30000
+
+  # Optimizer
+  optim: adamw_torch_fused
+  weight_decay: 0.1
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1.0e-8
+  max_grad_norm: 1.0
+
+  # Precision
+  bf16: true
+  tf32: true
+
+  # Memory optimization
+  gradient_checkpointing: true
+
+  # No freezing in video stage
+  freeze_vision_encoder: false
+
+  # Checkpointing
+  save_strategy: steps
+  save_steps: 1000
+  save_total_limit: 3
+
+  # Logging
+  logging_steps: 10
+  report_to:
+    - wandb
+    - tensorboard
+
+  # Data
+  dataloader_num_workers: 4
+  dataloader_pin_memory: true
+
+data:
+  # Dataset weights (from paper: 3.3M samples total)
+  # Image: 34.4%, Video: 33.0%, Text: 20.2%, Multi-image: 12.3%
+  datasets:
+    # Image datasets (34.4%)
+    llava_onevision:
+      path: lmms-lab/LLaVA-OneVision-Data
+      weight: 0.15
+      modality: image
+
+    mammoth_vl:
+      path: MAmmoTH-VL/MAmmoTH-VL-Instruct-12M
+      weight: 0.10
+      modality: image
+
+    # Multi-image datasets (12.3%)
+    m4_instruct:
+      path: lmms-lab/M4-Instruct-Data
+      weight: 0.12
+      modality: multi-image
+
+    # Video datasets (33.0%)
+    llava_video:
+      path: lmms-lab/LLaVA-Video-178K
+      weight: 0.08
+      modality: video
+
+    finevideo:
+      path: HuggingFaceFV/finevideo
+      weight: 0.05
+      modality: video
+
+    video_star:
+      path: orrzohar/Video-STaR
+      weight: 0.05
+      modality: video
+
+    vript:
+      path: Mutonix/Vript
+      weight: 0.05
+      modality: video
+
+    vista_400k:
+      path: TIGER-Lab/VISTA-400K
+      weight: 0.05
+      modality: video
+
+    moviechat:
+      path: Enxin/MovieChat-1K_train
+      weight: 0.03
+      modality: video
+
+    sharegpt4video:
+      path: ShareGPT4Video/ShareGPT4Video
+      weight: 0.02
+      modality: video
+
+  # Video settings
+  max_length: 4096
+  max_frames: 32
+  frame_sampling: uniform
+  max_video_duration: 210  # ~3.5 minutes
+  streaming: true

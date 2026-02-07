@@ -1,0 +1,40 @@
+Metadata-Version: 2.4
+Name: smolvlm-training
+Version: 0.1.0
+Summary: Training pipeline for SmolVLM2 256M and 500M models
+Author: SmolVLM Training
+License: Apache-2.0
+Keywords: vision-language-model,multimodal,smolvlm,deep-learning
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.1.0
+Requires-Dist: transformers>=4.40.0
+Requires-Dist: accelerate>=0.27.0
+Requires-Dist: datasets>=2.18.0
+Requires-Dist: trl>=0.8.0
+Requires-Dist: peft>=0.10.0
+Requires-Dist: bitsandbytes>=0.43.0
+Requires-Dist: decord>=0.6.0
+Requires-Dist: num2words
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: wandb
+Requires-Dist: safetensors
+Requires-Dist: sentencepiece
+Requires-Dist: einops
+Requires-Dist: timm
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Provides-Extra: flash
+Requires-Dist: flash-attn>=2.5.0; extra == "flash"

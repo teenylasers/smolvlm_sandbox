@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smolvlm-training"
+version = "0.1.0"
+description = "Training pipeline for SmolVLM2 256M and 500M models"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "SmolVLM Training"}
+]
+keywords = ["vision-language-model", "multimodal", "smolvlm", "deep-learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.1.0",
+    "transformers>=4.40.0",
+    "accelerate>=0.27.0",
+    "datasets>=2.18.0",
+    "trl>=0.8.0",
+    "peft>=0.10.0",
+    "bitsandbytes>=0.43.0",
+    "decord>=0.6.0",
+    "num2words",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "wandb",
+    "safetensors",
+    "sentencepiece",
+    "einops",
+    "timm",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "black",
+    "ruff",
+    "mypy",
+]
+flash = [
+    "flash-attn>=2.5.0",
+]
+
+[project.scripts]
+smolvlm-train-vision = "src.training.train_vision:main"
+smolvlm-train-video = "src.training.train_video:main"
+smolvlm-download = "src.data.download_datasets:main"
+smolvlm-eval = "src.evaluation.evaluate:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "configs*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

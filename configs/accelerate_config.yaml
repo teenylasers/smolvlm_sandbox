@@ -1,0 +1,63 @@
+# Accelerate configuration for SmolVLM2 distributed training
+# Use: accelerate launch --config_file configs/accelerate_config.yaml train.py
+
+compute_environment: LOCAL_MACHINE
+debug: false
+distributed_type: FSDP
+
+# FSDP Configuration
+fsdp_config:
+  # Sharding strategy - FULL_SHARD for maximum memory efficiency
+  fsdp_sharding_strategy: FULL_SHARD
+
+  # Auto wrap policy - wrap transformer layers
+  fsdp_auto_wrap_policy: TRANSFORMER_BASED_WRAP
+
+  # Layer class to wrap (adjust based on model architecture)
+  # For SmolLM2: SmolLM2DecoderLayer or LlamaDecoderLayer
+  fsdp_transformer_layer_cls_to_wrap: LlamaDecoderLayer
+
+  # Prefetch for better performance
+  fsdp_backward_prefetch_policy: BACKWARD_PRE
+  fsdp_forward_prefetch: true
+
+  # State dict type for checkpointing
+  fsdp_state_dict_type: SHARDED_STATE_DICT
+
+  # CPU offloading (enable if GPU memory is limited)
+  fsdp_offload_params: false
+
+  # Limit all gathers for memory efficiency
+  fsdp_use_orig_params: true
+
+  # Sync module states
+  fsdp_sync_module_states: true
+
+  # Activation checkpointing
+  fsdp_activation_checkpointing: true
+
+# Mixed precision
+mixed_precision: bf16
+
+# Machine configuration
+machine_rank: 0
+main_process_ip: null
+main_process_port: null
+main_training_function: main
+
+# Number of processes (GPUs)
+# Adjust based on your cluster
+num_machines: 1
+num_processes: 8
+
+# Optimizations
+dynamo_backend: "no"
+enable_cpu_affinity: false
+gpu_ids: all
+rdzv_backend: static
+
+# TPU (if applicable)
+tpu_env: []
+tpu_use_cluster: false
+tpu_use_sudo: false
+use_cpu: false

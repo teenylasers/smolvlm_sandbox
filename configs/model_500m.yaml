@@ -1,0 +1,49 @@
+# SmolVLM2-500M Model Configuration
+# Total params: ~500M (93M vision + 360M text + ~47M connector)
+
+model:
+  name: smolvlm2-500m
+  size: 500m
+
+  # Vision encoder (SigLIP)
+  vision_encoder:
+    name: google/siglip-base-patch16-512
+    hidden_size: 768
+    image_size: 384
+    patch_size: 16
+    freeze_initially: true
+    unfreeze_after_steps: 10000
+
+  # Text decoder (SmolLM2-360M)
+  text_decoder:
+    name: HuggingFaceTB/SmolLM2-360M-Instruct
+    hidden_size: 960
+    vocab_size: 49152
+    max_position_embeddings: 16384
+    rope_theta: 273000
+
+  # Pixel shuffle connector
+  connector:
+    type: pixel_shuffle
+    ratio: 3  # 9x compression
+    hidden_size: 960
+    num_layers: 2
+
+  # Visual tokens
+  visual_tokens:
+    tokens_per_patch: 81
+    max_image_patches: 36
+    image_token: "<image>"
+    video_token: "<video>"
+
+# Precision
+precision:
+  dtype: bfloat16
+  gradient_checkpointing: true
+
+# Special tokens
+special_tokens:
+  - "<image>"
+  - "<video>"
+  - "<image_start>"
+  - "<image_end>"

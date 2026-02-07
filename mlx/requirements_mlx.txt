@@ -1,0 +1,27 @@
+# MLX Dependencies for Local Testing (Apple Silicon M4)
+# For inference, data validation, and LoRA fine-tuning experiments
+
+# Core MLX
+mlx>=0.18.0
+mlx-lm>=0.18.0
+
+# SmolVLM2 support (use fork until merged into main mlx-vlm)
+# pip install git+https://github.com/pcuenca/mlx-vlm.git@smolvlm
+mlx-vlm>=0.1.0
+
+# Video processing
+decord>=0.6.0
+
+# Image processing
+pillow>=10.0.0
+
+# Data handling
+numpy>=1.24.0
+datasets>=2.18.0
+
+# Utilities
+tqdm
+safetensors
+
+# Note: For SmolVLM2 specific support, install the fork:
+# pip install git+https://github.com/pcuenca/mlx-vlm.git@smolvlm
