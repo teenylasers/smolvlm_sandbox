@@ -9,6 +9,7 @@ SmolVLM2 is a family of compact vision-language models that achieve strong perfo
 - **Full pretraining pipeline** from SigLIP + SmolLM2 components
 - **Two-stage training**: Vision stage → Video stage
 - **Multi-GPU distributed training** with FSDP
+- **Google Colab notebook** for quick experimentation
 - **MLX support** for local testing on Apple Silicon
 
 | Model | Parameters | Vision Encoder | Text Decoder | GPU RAM (Inference) |
@@ -75,6 +76,14 @@ pip install git+https://github.com/pcuenca/mlx-vlm.git@smolvlm
 ```
 
 ## Quick Start
+
+### 0. Try on Google Colab (Easiest)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/smolvlm_sandbox/blob/main/notebooks/smolvlm2_training_colab.ipynb)
+
+No setup required! Open the notebook and start training:
+- **Free tier (T4)**: Train 256M model
+- **Pro tier (A100)**: Train 256M or 500M models
 
 ### 1. Test Locally (Apple Silicon)
 
@@ -150,6 +159,9 @@ smolvlm_sandbox/
 │   ├── test_data_loading.py       # Validate data pipeline
 │   └── lora_finetune.py           # LoRA fine-tuning experiments
 │
+├── notebooks/
+│   └── smolvlm2_training_colab.ipynb  # Google Colab training notebook
+│
 ├── scripts/
 │   ├── setup_environment.sh       # Auto-setup for cloud/local
 │   ├── download_all_datasets.sh   # Download training data
@@ -214,7 +226,7 @@ accelerate launch --config_file configs/accelerate_config.yaml \
 | Dataset          | Source                               | Modality |
 |------------------|--------------------------------------|----------|
 | LLaVA-OneVision  | `lmms-lab/LLaVA-OneVision-Data`      | Image    |
-| MAmmoTH-VL.      | `MAmmoTH-VL/MAmmoTH-VL-Instruct-12M` | Image    |
+| MAmmoTH-VL       | `MAmmoTH-VL/MAmmoTH-VL-Instruct-12M` | Image    |
 | M4-Instruct      | `lmms-lab/M4-Instruct-Data`          | Multi-image |
 | LLaVA-Video-178K | `lmms-lab/LLaVA-Video-178K`          | Video    |
 | FineVideo        | `HuggingFaceFV/finevideo`            | Video    |
@@ -267,6 +279,32 @@ python mlx/lora_finetune.py --model-size 500m --estimate-memory
 |--------------|-----------|---------------|
 | 256M (4-bit) | ~1 GB     | ~4 GB         |
 | 500M (4-bit) | ~1.8 GB   | ~6 GB         |
+
+## Google Colab Training
+
+For quick experimentation without local setup, use the Colab notebook:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/smolvlm_sandbox/blob/main/notebooks/smolvlm2_training_colab.ipynb)
+
+### Colab GPU Options
+
+| GPU | VRAM | Model Size | Batch Size | Notes |
+|-----|------|------------|------------|-------|
+| T4 (free) | 16 GB | 256M | 1-2 | Use gradient checkpointing |
+| A100 (Pro) | 40 GB | 256M/500M | 4-8 | Recommended |
+
+### Features
+
+- Automatic checkpoint saving to Google Drive
+- Resume training after disconnection
+- Configurable batch size and training steps
+- Optional Weights & Biases logging
+
+### Tips
+
+1. **Avoid timeout**: Save checkpoints frequently (`SAVE_STEPS=100`)
+2. **OOM errors**: Reduce `BATCH_SIZE` to 1, enable gradient checkpointing
+3. **Resume training**: Use `trainer.train(resume_from_checkpoint=path)`
 
 ## Video Processing Backends
 
