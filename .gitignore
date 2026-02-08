@@ -1,3 +1,76 @@
+# Python
 __pycache__/
 **/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# MyPy
+.mypy_cache/
+
+# Training artifacts
+checkpoints/
+outputs/
+logs/
+wandb/
+runs/
 eval_results/
+
+# Data (too large for git)
+data/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+
+# MLX adapters
+adapters/
+sample_training_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local

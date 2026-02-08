@@ -1,5 +1,9 @@
 # SmolVLM2 Training Pipeline Dependencies
-# For GPU cluster training
+# For GPU cluster training (Linux/CUDA)
+#
+# Usage:
+#   Cloud/GPU:  pip install -r requirements.txt
+#   Local/MLX:  pip install -r mlx/requirements_mlx.txt
 
 # Core ML
 torch>=2.1.0
@@ -17,8 +21,8 @@ deepspeed>=0.14.0
 # Install separately: pip install flash-attn --no-build-isolation
 # flash-attn>=2.5.0
 
-# Vision & Video processing
-decord>=0.6.0
+# Vision & Video processing (Linux only)
+decord>=0.6.0  # Does NOT work on Apple Silicon - use mlx/requirements_mlx.txt instead
 pillow>=10.0.0
 timm>=0.9.0
 einops>=0.7.0

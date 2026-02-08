@@ -1,5 +1,0 @@
-[console_scripts]
-smolvlm-download = src.data.download_datasets:main
-smolvlm-eval = src.evaluation.evaluate:main
-smolvlm-train-video = src.training.train_video:main
-smolvlm-train-vision = src.training.train_vision:main

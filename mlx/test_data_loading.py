@@ -148,25 +148,88 @@ def test_image_processing() -> bool:
 
 
 def test_video_processing(video_path: Optional[str] = None) -> bool:
-    """Test video frame extraction with decord."""
+    """Test video frame extraction with available backend."""
     print("\nTesting video processing...")
 
+    import numpy as np
+    from PIL import Image
+    import platform
+
+    # Detect available backends
+    backends = []
     try:
         import decord
-        import numpy as np
-        from PIL import Image
+        backends.append("decord")
+    except ImportError:
+        pass
 
+    try:
+        import torchvision.io
+        backends.append("torchvision")
+    except ImportError:
+        pass
+
+    try:
+        import av
+        backends.append("av")
+    except ImportError:
+        pass
+
+    is_apple_silicon = platform.system() == "Darwin" and platform.machine() == "arm64"
+    print(f"Platform: {'Apple Silicon' if is_apple_silicon else 'Linux/x86'}")
+    print(f"Available backends: {backends if backends else 'None'}")
+
+    if not backends:
+        print("No video backend available!")
+        print("Install one of:")
+        print("  - Linux: pip install decord")
+        print("  - Apple Silicon: pip install torchvision  (recommended)")
+        return False
+
+    # Choose best backend for platform
+    if is_apple_silicon:
+        backend = "torchvision" if "torchvision" in backends else ("av" if "av" in backends else backends[0])
+    else:
+        backend = "decord" if "decord" in backends else ("torchvision" if "torchvision" in backends else backends[0])
+
+    print(f"Using backend: {backend}")
+
+    try:
         if video_path and Path(video_path).exists():
             # Use provided video
-            vr = decord.VideoReader(video_path)
             print(f"Video: {video_path}")
-            print(f"Total frames: {len(vr)}")
-            print(f"FPS: {vr.get_avg_fps()}")
 
-            # Extract frames uniformly
-            num_frames = min(32, len(vr))
-            indices = np.linspace(0, len(vr) - 1, num_frames, dtype=int)
-            frames = vr.get_batch(indices).asnumpy()
+            if backend == "decord":
+                vr = decord.VideoReader(video_path)
+                print(f"Total frames: {len(vr)}")
+                print(f"FPS: {vr.get_avg_fps()}")
+                num_frames = min(32, len(vr))
+                indices = np.linspace(0, len(vr) - 1, num_frames, dtype=int)
+                frames = vr.get_batch(indices).asnumpy()
+
+            elif backend == "torchvision":
+                from torchvision.io import read_video, read_video_timestamps
+                pts, fps = read_video_timestamps(video_path)
+                print(f"Total frames: {len(pts)}")
+                print(f"FPS: {fps}")
+                video, audio, info = read_video(video_path, pts_unit='sec')
+                # video shape: (T, H, W, C)
+                num_frames = min(32, video.shape[0])
+                indices = np.linspace(0, video.shape[0] - 1, num_frames, dtype=int)
+                frames = video[indices].numpy()
+
+            elif backend == "av":
+                container = av.open(video_path)
+                stream = container.streams.video[0]
+                print(f"Total frames: {stream.frames}")
+                print(f"FPS: {stream.average_rate}")
+                frames = []
+                for i, frame in enumerate(container.decode(video=0)):
+                    if i >= 32:
+                        break
+                    frames.append(frame.to_ndarray(format='rgb24'))
+                container.close()
+                frames = np.array(frames)
 
             print(f"Extracted {len(frames)} frames, shape: {frames.shape}")
         else:
@@ -181,10 +244,6 @@ def test_video_processing(video_path: Optional[str] = None) -> bool:
 
         return True
 
-    except ImportError as e:
-        print(f"decord not installed: {e}")
-        print("Install with: pip install decord")
-        return False
     except Exception as e:
         print(f"Error: {e}")
         import traceback

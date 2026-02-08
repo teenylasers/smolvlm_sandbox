@@ -29,19 +29,19 @@ dependencies = [
     "datasets>=2.18.0",
     "trl>=0.8.0",
     "peft>=0.10.0",
-    "bitsandbytes>=0.43.0",
-    "decord>=0.6.0",
     "num2words",
     "pillow>=10.0.0",
     "numpy>=1.24.0",
-    "wandb",
     "safetensors",
     "sentencepiece",
     "einops",
     "timm",
+    # Note: Video processing backends are platform-specific
+    # Install with: pip install -e ".[cloud]" or pip install -e ".[local]"
 ]
 
 [project.optional-dependencies]
+# Development tools
 dev = [
     "pytest>=7.0",
     "pytest-cov",
@@ -49,8 +49,34 @@ dev = [
     "ruff",
     "mypy",
 ]
+
+# Flash attention (CUDA only)
 flash = [
     "flash-attn>=2.5.0",
+]
+
+# Cloud/GPU training (Linux)
+cloud = [
+    "decord>=0.6.0",
+    "deepspeed>=0.14.0",
+    "bitsandbytes>=0.43.0",
+    "wandb",
+    "tensorboard",
+]
+
+# Local/Apple Silicon (MLX)
+local = [
+    "mlx>=0.18.0",
+    "mlx-lm>=0.18.0",
+    "torchvision>=0.16.0",
+]
+
+# Video processing - choose based on platform
+video-linux = [
+    "decord>=0.6.0",
+]
+video-macos = [
+    "torchvision>=0.16.0",  # Uses torchvision.io for video
 ]
 
 [project.scripts]
