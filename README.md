@@ -44,7 +44,7 @@ SmolVLM2 is a family of compact vision-language models that achieve strong perfo
 
 - macOS with M1/M2/M3/M4 chip
 - 16GB+ unified memory
-- Python 3.10+
+- Python 3.10-3.12 (3.13 has scipy compatibility issues)
 
 ## Installation
 
@@ -75,6 +75,12 @@ pip install -e ".[local]"
 # Install mlx-vlm with SmolVLM2 support
 pip install git+https://github.com/pcuenca/mlx-vlm.git@smolvlm
 ```
+
+> **Note**: Python 3.13 may fail to install `scipy` (a dependency) due to missing binary wheels. Use Python 3.12 instead:
+> ```bash
+> pyenv install 3.12.8
+> pyenv local 3.12.8
+> ```
 
 ## Quick Start
 
@@ -132,8 +138,9 @@ smolvlm_sandbox/
 │   ├── model_500m.yaml            # 500M model architecture
 │   ├── train_vision_stage.yaml    # Vision stage hyperparameters
 │   ├── train_video_stage.yaml     # Video stage hyperparameters
-│   ├── eval_video.yaml            # Video benchmark evaluation config
-│   └── eval_image.yaml            # Image benchmark evaluation config
+│   ├── eval_video.yaml            # Video benchmark evaluation config (GPU)
+│   ├── eval_image.yaml            # Image benchmark evaluation config (GPU)
+│   └── eval_local.yaml            # Local evaluation config (Apple Silicon)
 │
 ├── src/
 │   ├── model/
@@ -165,11 +172,16 @@ smolvlm_sandbox/
 │       └── utils/
 │           └── result_parser.py   # Results aggregation
 │
-├── mlx/                           # Apple Silicon local testing
+├── mlx/                           # Apple Silicon local testing & evaluation
 │   ├── requirements_mlx.txt       # MLX-specific dependencies
 │   ├── test_inference.py          # Test pretrained models
 │   ├── test_data_loading.py       # Validate data pipeline
-│   └── lora_finetune.py           # LoRA fine-tuning experiments
+│   ├── lora_finetune.py           # LoRA fine-tuning experiments
+│   ├── evaluate_local.py          # Local benchmark evaluation CLI
+│   ├── benchmark_loader.py        # HuggingFace dataset loading
+│   ├── mlx_inference.py           # MLX model wrapper (SmolVLM2)
+│   ├── pytorch_inference.py       # PyTorch/MPS wrapper (PerceptionLM)
+│   └── metrics.py                 # Evaluation metrics
 │
 ├── notebooks/
 │   └── smolvlm2_training_colab.ipynb  # Google Colab training notebook
@@ -291,6 +303,84 @@ python mlx/lora_finetune.py --model-size 500m --estimate-memory
 |--------------|-----------|---------------|
 | 256M (4-bit) | ~1 GB     | ~4 GB         |
 | 500M (4-bit) | ~1.8 GB   | ~6 GB         |
+
+### Local Benchmark Evaluation
+
+Evaluate SmolVLM2 and PerceptionLM on video benchmarks directly on your M4 MacBook Pro.
+
+#### SmolVLM2 (MLX - Optimized)
+
+```bash
+# Install mlx-vlm (if not already installed)
+# Note: Requires Python 3.10-3.12 (Python 3.13 has scipy issues)
+pip install git+https://github.com/pcuenca/mlx-vlm.git@smolvlm
+
+# Quick evaluation (10 samples per benchmark)
+python mlx/evaluate_local.py \
+    --model-size 256m \
+    --benchmarks mvbench \
+    --num-samples 10
+
+# Full evaluation (100 samples per benchmark)
+python mlx/evaluate_local.py \
+    --model-size 256m \
+    --benchmarks video \
+    --num-samples 100
+
+# Evaluate 2.2B model (best accuracy, ~5GB memory)
+python mlx/evaluate_local.py \
+    --model-size 2.2b \
+    --benchmarks video \
+    --num-samples 100
+```
+
+#### PerceptionLM (PyTorch/MPS)
+
+```bash
+# Install video decoder (if not already installed)
+pip install decord  # or: pip install av
+
+# Evaluate PerceptionLM 1B
+python mlx/evaluate_local.py \
+    --model-size plm-1b \
+    --benchmarks video \
+    --num-samples 100
+
+# Evaluate PerceptionLM 3B (requires ~8GB memory)
+python mlx/evaluate_local.py \
+    --model-size plm-3b \
+    --benchmarks mvbench \
+    --num-samples 50
+```
+
+**Available Models:**
+
+| Model | Backend | Memory | Notes |
+|-------|---------|--------|-------|
+| `256m` | MLX | ~2 GB | SmolVLM2-256M (fastest) |
+| `500m` | MLX | ~3 GB | SmolVLM2-500M |
+| `2.2b` | MLX | ~5 GB | SmolVLM2-2.2B (best accuracy) |
+| `plm-1b` | PyTorch/MPS | ~4 GB | PerceptionLM-1B |
+| `plm-3b` | PyTorch/MPS | ~8 GB | PerceptionLM-3B |
+
+**Available Benchmarks:**
+- `video-mme` - Comprehensive video understanding
+- `mvbench` - Multi-modal video benchmark
+- `mlvu` - Multi-task long video understanding
+- `tempcompass` - Temporal reasoning
+- `video` - All video benchmarks
+
+**Expected Performance (M4 MacBook Pro):**
+
+| Model | Samples | Time |
+|-------|---------|------|
+| SmolVLM2-256M | 100 × 4 benchmarks | ~20-30 min |
+| SmolVLM2-500M | 100 × 4 benchmarks | ~30-40 min |
+| SmolVLM2-2.2B | 100 × 4 benchmarks | ~45-60 min |
+| PerceptionLM-1B | 100 × 4 benchmarks | ~40-60 min |
+| PerceptionLM-3B | 100 × 4 benchmarks | ~60-90 min |
+
+Results are saved to `./evaluation_results/local/` as JSON files with per-sample predictions.
 
 ## Google Colab Training
 

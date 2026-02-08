@@ -1,0 +1,78 @@
+# Local Evaluation Configuration (Apple Silicon / MLX)
+# Evaluates SmolVLM2 models on video benchmarks using MLX
+#
+# Usage:
+#   python mlx/evaluate_local.py \
+#       --model-size 256m \
+#       --benchmarks video \
+#       --num-samples 100
+
+# Model settings
+model:
+  # Available sizes: 256m, 500m
+  size: 256m
+
+  # MLX model IDs (auto-selected based on size)
+  # 256m: mlx-community/SmolVLM2-256M-Video-Instruct-mlx
+  # 500m: mlx-community/SmolVLM2-500M-Video-Instruct-mlx
+
+  # Generation settings
+  max_tokens: 128
+  temperature: 0.0  # Greedy decoding for reproducibility
+
+  # Video settings
+  max_frames: 16  # Reduced from 32 for memory efficiency
+
+# Evaluation settings
+evaluation:
+  # Number of samples per benchmark
+  num_samples: 100
+
+  # Random seed for reproducible sampling
+  seed: 42
+
+  # Output directory for results
+  output_dir: ./evaluation_results/local
+
+# Benchmarks to evaluate
+benchmarks:
+  # Video understanding benchmarks
+  video:
+    - video-mme    # Comprehensive video understanding
+    - mvbench      # Multi-modal video benchmark
+    - mlvu         # Multi-task long video understanding
+    - tempcompass  # Temporal reasoning
+
+# Benchmark-specific settings
+benchmark_settings:
+  video-mme:
+    hf_path: lmms-lab/Video-MME
+    format: mcq  # Multiple choice question
+
+  mvbench:
+    hf_path: OpenGVLab/MVBench
+    format: mcq
+
+  mlvu:
+    hf_path: MLVU/MLVU
+    format: mcq
+
+  tempcompass:
+    hf_path: lmms-lab/TempCompass
+    format: mcq
+
+# Memory optimization for Apple Silicon
+memory:
+  # Clear memory cache periodically
+  gc_interval: 10  # Samples between garbage collection
+
+  # Video caching directory
+  cache_dir: ~/.cache/smolvlm_eval
+
+# Expected performance (M4 MacBook Pro)
+# | Model | Memory | Time per sample |
+# |-------|--------|-----------------|
+# | 256M  | ~2GB   | ~3-5s           |
+# | 500M  | ~3GB   | ~5-8s           |
+#
+# Total time for 100 samples x 4 benchmarks = ~20-30 minutes per model
