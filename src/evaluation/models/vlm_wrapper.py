@@ -73,7 +73,6 @@ def _create_vlm_wrapper():
             device_map: Device mapping strategy (default: "auto").
             max_frames_num: Maximum video frames (default: 32).
             use_cache: Use KV cache during generation (default: True).
-            trust_remote_code: Trust remote code (default: True).
         """
 
         def __init__(
@@ -87,7 +86,6 @@ def _create_vlm_wrapper():
             device_map: str = "auto",
             max_frames_num: int = 32,
             use_cache: bool = True,
-            trust_remote_code: bool = True,
             **kwargs,
         ):
             super().__init__()
@@ -118,7 +116,6 @@ def _create_vlm_wrapper():
                 "torch_dtype": self._dtype,
                 "device_map": device_map,
                 "attn_implementation": attn_implementation,
-                "trust_remote_code": trust_remote_code,
             }
             model_kwargs.update(kwargs)
 
@@ -131,7 +128,6 @@ def _create_vlm_wrapper():
             self._processor = AutoProcessor.from_pretrained(
                 pretrained,
                 revision=revision,
-                trust_remote_code=trust_remote_code,
                 use_fast=self._config.use_fast_processor,
             )
 

@@ -4,12 +4,12 @@ Implements weighted sampling across multiple datasets
 according to the data mixing ratios from the paper.
 """
 
-import torch
-from torch.utils.data import IterableDataset
-from typing import Dict, List, Optional, Iterator, Any
-import random
 import logging
+import random
 from dataclasses import dataclass
+from typing import Any, Dict, Iterator, List, Optional
+
+from torch.utils.data import IterableDataset
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatasetWeight:
     """Configuration for a dataset in the mixture."""
+
     name: str
     dataset: IterableDataset
     weight: float
@@ -176,17 +177,13 @@ class BalancedMixer(IterableDataset):
             )
 
         # Create iterators
-        modality_iters = {
-            m: iter(mixer) for m, mixer in modality_mixers.items()
-        }
+        modality_iters = {m: iter(mixer) for m, mixer in modality_mixers.items()}
         active_modalities = set(modality_iters.keys())
 
         while active_modalities:
             # Sample modality
             active_list = list(active_modalities)
-            weights = [
-                self.modality_weights.get(m, 0.1) for m in active_list
-            ]
+            weights = [self.modality_weights.get(m, 0.1) for m in active_list]
             total = sum(weights)
             weights = [w / total for w in weights]
 
@@ -265,11 +262,13 @@ def create_video_stage_mixer(
     for name, ds in datasets_dict.items():
         if name in dataset_configs:
             modality, weight = dataset_configs[name]
-            datasets.append(DatasetWeight(
-                name=name,
-                dataset=ds,
-                weight=weight,
-                modality=modality,
-            ))
+            datasets.append(
+                DatasetWeight(
+                    name=name,
+                    dataset=ds,
+                    weight=weight,
+                    modality=modality,
+                )
+            )
 
     return BalancedMixer(datasets=datasets, seed=seed)

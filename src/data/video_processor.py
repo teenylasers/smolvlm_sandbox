@@ -5,13 +5,14 @@ Supports multiple backends: decord (Linux), av/opencv (Apple Silicon).
 Optimal clip length is ~3.5 minutes based on training paper.
 """
 
-import torch
-import numpy as np
-from PIL import Image
-from typing import List, Optional, Tuple, Union
-from pathlib import Path
 import logging
 import platform
+from pathlib import Path
+from typing import List, Optional, Tuple, Union
+
+import numpy as np
+import torch
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +24,21 @@ TORCHVISION_AVAILABLE = False
 try:
     import decord
     from decord import VideoReader, cpu
+
     DECORD_AVAILABLE = True
 except ImportError:
     pass
 
 try:
     import av
+
     AV_AVAILABLE = True
 except ImportError:
     pass
 
 try:
     import torchvision.io
+
     TORCHVISION_AVAILABLE = True
 except ImportError:
     pass
@@ -67,8 +71,7 @@ if DEFAULT_BACKEND:
     logger.info(f"Video backend: {DEFAULT_BACKEND}")
 else:
     logger.warning(
-        "No video backend available. Install one of: "
-        "decord (Linux), torchvision, or av"
+        "No video backend available. Install one of: decord (Linux), torchvision, or av"
     )
 
 
@@ -122,14 +125,18 @@ class VideoProcessor:
         # Initialize backend-specific settings
         if self.backend == "decord":
             if not DECORD_AVAILABLE:
-                raise ImportError("decord not available. Install with: pip install decord")
+                raise ImportError(
+                    "decord not available. Install with: pip install decord"
+                )
             decord.bridge.set_bridge("native")
         elif self.backend == "av":
             if not AV_AVAILABLE:
                 raise ImportError("av not available. Install with: pip install av")
         elif self.backend == "torchvision":
             if not TORCHVISION_AVAILABLE:
-                raise ImportError("torchvision not available. Install with: pip install torchvision")
+                raise ImportError(
+                    "torchvision not available. Install with: pip install torchvision"
+                )
 
         logger.info(f"VideoProcessor initialized with backend: {self.backend}")
 
@@ -146,7 +153,11 @@ class VideoProcessor:
         stream = container.streams.video[0]
 
         fps = float(stream.average_rate) if stream.average_rate else 30.0
-        total_frames = stream.frames if stream.frames > 0 else int(stream.duration * fps / stream.time_base.denominator)
+        total_frames = (
+            stream.frames
+            if stream.frames > 0
+            else int(stream.duration * fps / stream.time_base.denominator)
+        )
 
         # We'll load frames lazily, return container info
         return container, fps, total_frames
@@ -155,18 +166,23 @@ class VideoProcessor:
         """Load video using torchvision backend."""
         # Get video metadata
         from torchvision.io import read_video_timestamps
+
         pts, fps = read_video_timestamps(video_path)
         total_frames = len(pts)
         fps = fps or 30.0
         return video_path, fps, total_frames
 
-    def _extract_frames_decord(self, video_path: str, indices: np.ndarray) -> List[np.ndarray]:
+    def _extract_frames_decord(
+        self, video_path: str, indices: np.ndarray
+    ) -> List[np.ndarray]:
         """Extract frames using decord."""
         vr = VideoReader(str(video_path), ctx=cpu(0))
         frames = vr.get_batch(indices).asnumpy()
         return [frame for frame in frames]
 
-    def _extract_frames_av(self, video_path: str, indices: np.ndarray) -> List[np.ndarray]:
+    def _extract_frames_av(
+        self, video_path: str, indices: np.ndarray
+    ) -> List[np.ndarray]:
         """Extract frames using PyAV."""
         container = av.open(str(video_path))
         stream = container.streams.video[0]
@@ -177,7 +193,7 @@ class VideoProcessor:
 
         for frame in container.decode(video=0):
             if frame_idx in indices_set:
-                img = frame.to_ndarray(format='rgb24')
+                img = frame.to_ndarray(format="rgb24")
                 frames.append(img)
                 if len(frames) >= len(indices):
                     break
@@ -186,12 +202,14 @@ class VideoProcessor:
         container.close()
         return frames
 
-    def _extract_frames_torchvision(self, video_path: str, indices: np.ndarray) -> List[np.ndarray]:
+    def _extract_frames_torchvision(
+        self, video_path: str, indices: np.ndarray
+    ) -> List[np.ndarray]:
         """Extract frames using torchvision."""
         from torchvision.io import read_video
 
         # Read full video (torchvision doesn't support seeking by frame index easily)
-        video, audio, info = read_video(str(video_path), pts_unit='sec')
+        video, audio, info = read_video(str(video_path), pts_unit="sec")
 
         # video shape: (T, H, W, C) - already in RGB format
         total_frames = video.shape[0]
@@ -257,12 +275,18 @@ class VideoProcessor:
             # Sample more densely at beginning and end
             # Middle section sampled more sparsely
             quarter = self.num_frames // 4
-            indices = np.concatenate([
-                np.linspace(0, total_frames // 4, quarter, dtype=int),
-                np.linspace(total_frames // 4, 3 * total_frames // 4, 2 * quarter, dtype=int),
-                np.linspace(3 * total_frames // 4, total_frames - 1, quarter, dtype=int),
-            ])
-            indices = np.unique(indices)[:self.num_frames]
+            indices = np.concatenate(
+                [
+                    np.linspace(0, total_frames // 4, quarter, dtype=int),
+                    np.linspace(
+                        total_frames // 4, 3 * total_frames // 4, 2 * quarter, dtype=int
+                    ),
+                    np.linspace(
+                        3 * total_frames // 4, total_frames - 1, quarter, dtype=int
+                    ),
+                ]
+            )
+            indices = np.unique(indices)[: self.num_frames]
 
         else:
             raise ValueError(f"Unknown frame sampling: {self.frame_sampling}")
@@ -288,7 +312,7 @@ class VideoProcessor:
 
         logger.debug(
             f"Video: {total_frames} frames, {fps:.1f} FPS, "
-            f"{total_frames/fps:.1f}s duration"
+            f"{total_frames / fps:.1f}s duration"
         )
 
         # Get frame indices
@@ -357,7 +381,9 @@ class VideoProcessor:
         return pixel_values
 
     @staticmethod
-    def get_video_info(video_path: Union[str, Path], backend: Optional[str] = None) -> dict:
+    def get_video_info(
+        video_path: Union[str, Path], backend: Optional[str] = None
+    ) -> dict:
         """Get video metadata.
 
         Args:
@@ -390,7 +416,9 @@ class VideoProcessor:
                 stream = container.streams.video[0]
                 fps = float(stream.average_rate) if stream.average_rate else 30.0
                 num_frames = stream.frames if stream.frames > 0 else 0
-                duration = float(stream.duration * stream.time_base) if stream.duration else 0
+                duration = (
+                    float(stream.duration * stream.time_base) if stream.duration else 0
+                )
                 info = {
                     "num_frames": num_frames,
                     "fps": fps,
@@ -403,11 +431,14 @@ class VideoProcessor:
                 return info
 
             elif backend == "torchvision":
-                from torchvision.io import read_video_timestamps, read_video
+                from torchvision.io import read_video, read_video_timestamps
+
                 pts, fps = read_video_timestamps(video_path)
                 fps = fps or 30.0
                 # Read first frame to get dimensions
-                video, _, _ = read_video(video_path, start_pts=0, end_pts=0.1, pts_unit='sec')
+                video, _, _ = read_video(
+                    video_path, start_pts=0, end_pts=0.1, pts_unit="sec"
+                )
                 return {
                     "num_frames": len(pts),
                     "fps": fps,

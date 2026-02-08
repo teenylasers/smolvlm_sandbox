@@ -234,7 +234,6 @@ def initialize_smolvlm_model(
     vision_encoder = AutoModel.from_pretrained(
         config.vision_encoder_name,
         torch_dtype=torch_dtype,
-        trust_remote_code=True,
     )
 
     # Load text decoder (SmolLM2)
@@ -244,7 +243,6 @@ def initialize_smolvlm_model(
         torch_dtype=torch_dtype,
         device_map=device_map,
         attn_implementation=attn_impl,
-        trust_remote_code=True,
     )
 
     # Extend context length
@@ -326,7 +324,6 @@ def load_pretrained_smolvlm(
         model_name_or_path,
         torch_dtype=torch_dtype,
         device_map=device_map,
-        trust_remote_code=True,
     )
 
     processor = AutoProcessor.from_pretrained(model_name_or_path)

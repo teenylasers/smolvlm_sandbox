@@ -77,7 +77,6 @@ def test_dataset_download(dataset_name: str, num_samples: int = 100) -> bool:
             name=config.get("name"),
             split=config["split"],
             streaming=config.get("streaming", True),
-            trust_remote_code=True,
         )
 
         # Take samples

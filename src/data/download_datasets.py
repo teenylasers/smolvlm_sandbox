@@ -16,12 +16,10 @@ Usage:
 """
 
 import argparse
-import os
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatasetConfig:
     """Configuration for a dataset."""
+
     name: str
     hf_path: str
     hf_name: Optional[str] = None
@@ -39,7 +38,6 @@ class DatasetConfig:
     stage: str = "vision"  # vision or video
     mix_weight: float = 1.0
     max_samples: Optional[int] = None
-    trust_remote_code: bool = True
 
 
 # Vision Stage Datasets (Stage 1)
@@ -78,7 +76,6 @@ VIDEO_STAGE_DATASETS = [
         stage="video",
         mix_weight=0.10,
     ),
-
     # Multi-image datasets (12.3%)
     DatasetConfig(
         name="m4_instruct",
@@ -87,7 +84,6 @@ VIDEO_STAGE_DATASETS = [
         stage="video",
         mix_weight=0.12,
     ),
-
     # Video datasets (33.0%)
     DatasetConfig(
         name="llava_video_178k",
@@ -138,7 +134,6 @@ VIDEO_STAGE_DATASETS = [
         stage="video",
         mix_weight=0.02,
     ),
-
     # Text datasets (20.2%)
     # These are typically included from the vision stage or LLM training
 ]
@@ -154,15 +149,15 @@ def get_all_datasets() -> Dict[str, List[DatasetConfig]]:
 
 def preview_datasets():
     """Print information about all datasets."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SmolVLM2 Training Datasets")
-    print("="*80)
+    print("=" * 80)
 
     all_datasets = get_all_datasets()
 
     for stage, datasets in all_datasets.items():
         print(f"\n{stage.upper()} STAGE DATASETS:")
-        print("-"*60)
+        print("-" * 60)
 
         total_weight = sum(d.mix_weight for d in datasets)
 
@@ -202,7 +197,6 @@ def download_dataset(
             name=config.hf_name,
             split=config.split,
             streaming=config.streaming,
-            trust_remote_code=config.trust_remote_code,
             num_proc=num_proc if not config.streaming else None,
         )
 
@@ -224,6 +218,7 @@ def download_dataset(
 
             # Save metadata
             import json
+
             metadata = {
                 "name": config.name,
                 "hf_path": config.hf_path,
@@ -283,9 +278,9 @@ def download_all(
         results[config.name] = success
 
     # Print summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Download Summary")
-    print("="*60)
+    print("=" * 60)
 
     for name, success in results.items():
         status = "SUCCESS" if success else "FAILED"

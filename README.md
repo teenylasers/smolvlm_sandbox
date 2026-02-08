@@ -193,10 +193,69 @@ smolvlm_sandbox/
 │   ├── run_video_stage.sh         # Launch video training
 │   └── evaluate_model.sh          # Run benchmarks
 │
+├── tests/                         # pytest test suite
+│   ├── conftest.py                # Shared fixtures, platform detection
+│   ├── data_tests/                # Data loading tests
+│   │   ├── test_dataset_loaders.py
+│   │   ├── test_data_collator.py
+│   │   ├── test_data_mixer.py
+│   │   ├── test_video_processor.py
+│   │   ├── test_download_datasets.py
+│   │   └── test_integration.py
+│   └── fixtures/
+│       └── mock_data.py           # Mock data generators
+│
 ├── pyproject.toml
 ├── requirements.txt               # Cloud/GPU dependencies
 └── README.md
 ```
+
+## Testing
+
+The test suite validates the data loading pipeline on both cloud (Linux + CUDA) and local (Apple Silicon) environments.
+
+### Running Tests
+
+```bash
+# Install test dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest tests/
+
+# Run tests excluding those that download data from HuggingFace
+pytest tests/ -m "not download_data"
+
+# Run with coverage
+pytest tests/ --cov=src/data --cov-report=html
+```
+
+### Test Markers
+
+| Marker | Description |
+|--------|-------------|
+| `cuda` | Tests requiring NVIDIA GPU |
+| `mps` | Tests requiring Apple Silicon (MPS) |
+| `video` | Tests requiring video processing backend |
+| `integration` | End-to-end pipeline tests |
+| `download_data` | Tests that download from HuggingFace |
+
+```bash
+# Run only MPS tests
+pytest tests/ -m "mps"
+
+# Run only integration tests
+pytest tests/ -m "integration"
+
+# Exclude video tests
+pytest tests/ -m "not video"
+```
+
+### Platform-Specific Behavior
+
+Tests automatically detect the platform and skip incompatible tests:
+- **Apple Silicon**: Uses `torchvision` for video, skips CUDA tests
+- **Linux + CUDA**: Uses `decord` for video, skips MPS tests
 
 ## Training Pipeline
 

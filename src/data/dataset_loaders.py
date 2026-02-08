@@ -4,15 +4,14 @@ Implements loaders for each dataset used in vision and video stages.
 Handles different data formats and converts to unified format.
 """
 
+import io
+import logging
+from typing import Any, Dict, Iterator, List, Optional
+
 import torch
-from torch.utils.data import Dataset, IterableDataset
 from datasets import load_dataset
 from PIL import Image
-from typing import Dict, List, Optional, Any, Iterator
-import logging
-from pathlib import Path
-import json
-import io
+from torch.utils.data import IterableDataset
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,6 @@ def load_the_cauldron(
         name=subset,
         split=split,
         streaming=streaming,
-        trust_remote_code=True,
     )
 
     return ds
@@ -108,7 +106,6 @@ def load_docmatix(
         name="images",
         split=split,
         streaming=streaming,
-        trust_remote_code=True,
     )
 
     return ds
@@ -128,7 +125,6 @@ def load_llava_onevision(
         "lmms-lab/LLaVA-OneVision-Data",
         split=split,
         streaming=streaming,
-        trust_remote_code=True,
     )
 
     return ds
@@ -148,7 +144,6 @@ def load_llava_video(
         "lmms-lab/LLaVA-Video-178K",
         split=split,
         streaming=streaming,
-        trust_remote_code=True,
     )
 
     return ds
@@ -168,7 +163,6 @@ def load_video_star(
         "orrzohar/Video-STaR",
         split=split,
         streaming=streaming,
-        trust_remote_code=True,
     )
 
     return ds

@@ -188,7 +188,6 @@ def load_vision_checkpoint(checkpoint_path: str):
         model = AutoModelForVision2Seq.from_pretrained(
             checkpoint_path,
             torch_dtype=torch.bfloat16,
-            trust_remote_code=True,
         )
         processor = AutoProcessor.from_pretrained(checkpoint_path)
         tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)

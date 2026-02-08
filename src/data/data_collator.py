@@ -4,10 +4,11 @@ Handles batching of multi-modal samples with variable-length
 sequences and multiple images/video frames.
 """
 
-import torch
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, Union
 import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Union
+
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -243,12 +244,8 @@ class VideoDataCollator(SmolVLMDataCollator):
             for vf in video_features:
                 if vf is None:
                     # Create zero tensor for samples without video
-                    padded_videos.append(
-                        torch.zeros(max_frames, 3, 384, 384)
-                    )
-                    video_masks.append(
-                        torch.zeros(max_frames, dtype=torch.bool)
-                    )
+                    padded_videos.append(torch.zeros(max_frames, 3, 384, 384))
+                    video_masks.append(torch.zeros(max_frames, dtype=torch.bool))
                 else:
                     n_frames = vf.size(0)
                     if n_frames > max_frames:
@@ -259,14 +256,17 @@ class VideoDataCollator(SmolVLMDataCollator):
                     elif n_frames < max_frames:
                         # Pad with zeros
                         padding = torch.zeros(
-                            max_frames - n_frames, *vf.shape[1:],
+                            max_frames - n_frames,
+                            *vf.shape[1:],
                             dtype=vf.dtype,
                         )
                         padded_videos.append(torch.cat([vf, padding]))
-                        mask = torch.cat([
-                            torch.ones(n_frames, dtype=torch.bool),
-                            torch.zeros(max_frames - n_frames, dtype=torch.bool),
-                        ])
+                        mask = torch.cat(
+                            [
+                                torch.ones(n_frames, dtype=torch.bool),
+                                torch.zeros(max_frames - n_frames, dtype=torch.bool),
+                            ]
+                        )
                         video_masks.append(mask)
                     else:
                         padded_videos.append(vf)

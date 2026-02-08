@@ -36,7 +36,6 @@ class ModelConfig:
 
     # Processor settings
     use_fast_processor: bool = True
-    trust_remote_code: bool = True
 
     # Video settings
     video_load_backend: str = "decord"  # decord, torchvision, av
@@ -236,7 +235,6 @@ def get_model_config(
         max_image_patches=base_config.max_image_patches,
         attn_implementation=base_config.attn_implementation,
         use_fast_processor=base_config.use_fast_processor,
-        trust_remote_code=base_config.trust_remote_code,
         video_load_backend=base_config.video_load_backend,
     )
 

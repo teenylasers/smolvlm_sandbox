@@ -55,9 +55,9 @@ logs/
 wandb/
 runs/
 eval_results/
+evaluation_results/
 
 # Data (too large for git)
-data/
 *.safetensors
 *.bin
 *.pt
