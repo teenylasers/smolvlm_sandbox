@@ -7,10 +7,11 @@ The pixel shuffle operation rearranges spatial features into channels,
 reducing spatial resolution while increasing representational density.
 """
 
+from typing import Optional
+
 import torch
 import torch.nn as nn
 from einops import rearrange
-from typing import Optional
 
 
 class PixelShuffle(nn.Module):
@@ -43,18 +44,19 @@ class PixelShuffle(nn.Module):
         if x.dim() == 3:
             # Reshape from (B, N, C) to (B, H, W, C)
             B, N, C = x.shape
-            H = W = int(N ** 0.5)
+            H = W = int(N**0.5)
             assert H * W == N, f"Cannot reshape {N} tokens to square grid"
             x = x.view(B, H, W, C)
 
         B, H, W, C = x.shape
         r = self.ratio
 
-        assert H % r == 0 and W % r == 0, \
+        assert H % r == 0 and W % r == 0, (
             f"Spatial dims ({H}, {W}) must be divisible by ratio {r}"
+        )
 
         # Rearrange: (B, H, W, C) -> (B, H/r, W/r, C*r*r)
-        x = rearrange(x, 'b (h r1) (w r2) c -> b h w (c r1 r2)', r1=r, r2=r)
+        x = rearrange(x, "b (h r1) (w r2) c -> b h w (c r1 r2)", r1=r, r2=r)
 
         return x
 
@@ -98,7 +100,7 @@ class PixelShuffleConnector(nn.Module):
         self.text_hidden_size = text_hidden_size
 
         # Pixel shuffle increases channels by ratio^2
-        shuffled_dim = vision_hidden_size * (pixel_shuffle_ratio ** 2)
+        shuffled_dim = vision_hidden_size * (pixel_shuffle_ratio**2)
 
         # Pixel shuffle layer
         self.pixel_shuffle = PixelShuffle(ratio=pixel_shuffle_ratio)
@@ -168,7 +170,7 @@ class PixelShuffleConnector(nn.Module):
         # Assuming 384x384 image, 16x16 patches
         patches_per_dim = 384 // 16  # 24
         tokens_per_dim = patches_per_dim // self.pixel_shuffle_ratio  # 8
-        return tokens_per_dim ** 2  # 64
+        return tokens_per_dim**2  # 64
 
 
 def create_connector(config) -> PixelShuffleConnector:

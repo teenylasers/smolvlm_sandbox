@@ -4,8 +4,7 @@ Defines configuration classes for SmolVLM2 256M and 500M variants.
 Architecture follows Idefics3 with modifications for efficiency.
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, List
+from dataclasses import dataclass
 
 
 @dataclass
@@ -61,10 +60,12 @@ class SmolVLMConfig:
 
     def __post_init__(self):
         """Validate configuration."""
-        assert self.image_size % self.pixel_shuffle_ratio == 0, \
+        assert self.image_size % self.pixel_shuffle_ratio == 0, (
             f"image_size ({self.image_size}) must be divisible by pixel_shuffle_ratio ({self.pixel_shuffle_ratio})"
-        assert self.image_size % self.patch_size == 0, \
+        )
+        assert self.image_size % self.patch_size == 0, (
             f"image_size ({self.image_size}) must be divisible by patch_size ({self.patch_size})"
+        )
 
 
 @dataclass
@@ -74,6 +75,7 @@ class SmolVLM256MConfig(SmolVLMConfig):
     Uses SmolLM2-135M as the text decoder.
     Total params: ~256M (93M vision + 135M text + ~28M connector)
     """
+
     model_size: str = "256m"
     text_decoder_name: str = "HuggingFaceTB/SmolLM2-135M-Instruct"
     text_hidden_size: int = 576  # SmolLM2-135M
@@ -90,6 +92,7 @@ class SmolVLM500MConfig(SmolVLMConfig):
     Uses SmolLM2-360M as the text decoder.
     Total params: ~500M (93M vision + 360M text + ~47M connector)
     """
+
     model_size: str = "500m"
     text_decoder_name: str = "HuggingFaceTB/SmolLM2-360M-Instruct"
     text_hidden_size: int = 960  # SmolLM2-360M
@@ -114,7 +117,9 @@ def get_config(model_size: str = "256m") -> SmolVLMConfig:
     }
 
     if model_size not in configs:
-        raise ValueError(f"Unknown model size: {model_size}. Choose from {list(configs.keys())}")
+        raise ValueError(
+            f"Unknown model size: {model_size}. Choose from {list(configs.keys())}"
+        )
 
     return configs[model_size]()
 

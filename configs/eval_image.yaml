@@ -1,0 +1,74 @@
+# Image/Document Evaluation Configuration
+# Evaluates models on image understanding benchmarks from SmolVLM2 paper
+#
+# Usage:
+#   python -m src.evaluation.evaluate \
+#       --model-path HuggingFaceTB/SmolVLM2-2.2B-Instruct \
+#       --benchmarks image \
+#       --bf16
+
+# Model settings
+model:
+  # HuggingFace model ID or local checkpoint path
+  path: HuggingFaceTB/SmolVLM2-2.2B-Instruct
+
+  # Inference settings
+  dtype: bfloat16
+  max_frames: 1       # Single image mode
+  attn_implementation: flash_attention_2
+
+# Benchmarks to run
+benchmarks:
+  # Document Understanding
+  document:
+    - textvqa         # TextVQA: Text recognition in images
+    - docvqa          # DocVQA: Document question answering
+    - chartqa         # ChartQA: Chart understanding
+    - ocrbench        # OCRBench: OCR evaluation
+
+  # Visual Reasoning
+  reasoning:
+    - mmmu_val        # MMMU: Multi-discipline understanding
+    - mathvista_testmini  # MathVista: Mathematical reasoning
+    - ai2d            # AI2D: Diagram understanding
+    - scienceqa_img   # ScienceQA: Science question answering
+    - mmstar          # MMStar: Multi-modal reasoning
+
+# Execution settings
+runtime:
+  batch_size: 32      # Higher batch size for images
+  num_gpus: 1
+  output_dir: ./evaluation_results/image
+  log_samples: true
+
+# Benchmark-specific settings
+benchmark_settings:
+  mmmu_val:
+    # MMMU subjects
+    subjects:
+      - art
+      - biology
+      - chemistry
+      - computer_science
+      - economics
+      - engineering
+      - geography
+      - history
+      - law
+      - literature
+      - math
+      - medicine
+      - music
+      - philosophy
+      - physics
+      - psychology
+
+  docvqa:
+    # DocVQA metric
+    metric: anls      # Average Normalized Levenshtein Similarity
+
+# Output format
+output:
+  format: json
+  include_samples: true
+  aggregated_file: image_results.json

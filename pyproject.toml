@@ -79,6 +79,22 @@ video-macos = [
     "torchvision>=0.16.0",  # Uses torchvision.io for video
 ]
 
+# Evaluation dependencies (lmms-eval framework)
+eval = [
+    "lmms-eval>=0.5.0",
+    "pandas>=2.0.0",
+    "tabulate>=0.9.0",
+]
+
+# Full evaluation with all video backends
+eval-full = [
+    "lmms-eval>=0.5.0",
+    "pandas>=2.0.0",
+    "tabulate>=0.9.0",
+    "decord>=0.6.0",
+    "av>=10.0.0",
+]
+
 [project.scripts]
 smolvlm-train-vision = "src.training.train_vision:main"
 smolvlm-train-video = "src.training.train_video:main"

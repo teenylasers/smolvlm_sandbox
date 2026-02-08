@@ -9,6 +9,7 @@ SmolVLM2 is a family of compact vision-language models that achieve strong perfo
 - **Full pretraining pipeline** from SigLIP + SmolLM2 components
 - **Two-stage training**: Vision stage → Video stage
 - **Multi-GPU distributed training** with FSDP
+- **Comprehensive evaluation** on 19 benchmarks using lmms-eval (SmolVLM2 + PerceptionLM)
 - **Google Colab notebook** for quick experimentation
 - **MLX support** for local testing on Apple Silicon
 
@@ -130,7 +131,9 @@ smolvlm_sandbox/
 │   ├── model_256m.yaml            # 256M model architecture
 │   ├── model_500m.yaml            # 500M model architecture
 │   ├── train_vision_stage.yaml    # Vision stage hyperparameters
-│   └── train_video_stage.yaml     # Video stage hyperparameters
+│   ├── train_video_stage.yaml     # Video stage hyperparameters
+│   ├── eval_video.yaml            # Video benchmark evaluation config
+│   └── eval_image.yaml            # Image benchmark evaluation config
 │
 ├── src/
 │   ├── model/
@@ -150,8 +153,17 @@ smolvlm_sandbox/
 │   │   ├── train_vision.py        # Stage 1: Vision training
 │   │   └── train_video.py         # Stage 2: Video training
 │   │
-│   └── evaluation/
-│       └── evaluate.py            # Benchmark evaluation
+│   └── evaluation/                # Benchmark evaluation (lmms-eval)
+│       ├── evaluate.py            # Main CLI entry point
+│       ├── runner.py              # lmms-eval orchestration
+│       ├── models/
+│       │   ├── vlm_wrapper.py     # Unified model wrapper
+│       │   └── model_registry.py  # Model configurations
+│       ├── benchmarks/
+│       │   ├── benchmark_configs.py  # Benchmark mappings
+│       │   └── plm_videobench.py     # PLM-VideoBench utilities
+│       └── utils/
+│           └── result_parser.py   # Results aggregation
 │
 ├── mlx/                           # Apple Silicon local testing
 │   ├── requirements_mlx.txt       # MLX-specific dependencies
@@ -362,22 +374,146 @@ num_processes: 8
 
 ## Evaluation
 
-Run benchmarks on trained models:
+Comprehensive evaluation using [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval) framework. Supports both SmolVLM2 and PerceptionLM models on video and image benchmarks.
+
+### Installation
 
 ```bash
-./scripts/evaluate_model.sh ./checkpoints/video_stage_256m "video-mme,mlvu,mvbench"
+# Install evaluation dependencies
+pip install -e ".[eval]"
+
+# Or with all video backends
+pip install -e ".[eval-full]"
 ```
+
+### Supported Models
+
+| Model | HuggingFace Path | Parameters |
+|-------|------------------|------------|
+| SmolVLM2-256M | `HuggingFaceTB/SmolVLM2-256M-Video-Instruct` | 256M |
+| SmolVLM2-500M | `HuggingFaceTB/SmolVLM2-500M-Video-Instruct` | 500M |
+| SmolVLM2-2.2B | `HuggingFaceTB/SmolVLM2-2.2B-Instruct` | 2.2B |
+| PerceptionLM-1B | `facebook/Perception-LM-1B` | 1B |
+| PerceptionLM-3B | `facebook/Perception-LM-3B` | 3B |
+
+### Quick Start
+
+```bash
+# Evaluate SmolVLM2 on video benchmarks
+python -m src.evaluation.evaluate \
+    --model-path HuggingFaceTB/SmolVLM2-2.2B-Instruct \
+    --benchmarks video \
+    --bf16
+
+# Evaluate PerceptionLM on PLM-VideoBench
+python -m src.evaluation.evaluate \
+    --model-path facebook/Perception-LM-3B \
+    --benchmarks plm \
+    --bf16
+
+# Evaluate local checkpoint on all benchmarks
+python -m src.evaluation.evaluate \
+    --model-path ./checkpoints/video_stage_256m \
+    --benchmarks all \
+    --output-dir ./results
+
+# Use shell script
+./scripts/evaluate_model.sh HuggingFaceTB/SmolVLM2-256M-Video-Instruct video
+```
+
+### Benchmark Groups
+
+Use these shortcuts for common benchmark combinations:
+
+| Group | Benchmarks |
+|-------|------------|
+| `video` | Video-MME, MLVU, MVBench, WorldSense, TempCompass |
+| `plm` | PLM-VideoBench (FGQA, SGQA, RCap, RTLoc, RDCap) |
+| `image` | TextVQA, DocVQA, ChartQA, MMMU, MathVista, OCRBench, AI2D, ScienceQA, MMStar |
+| `all` | All benchmarks |
 
 ### Benchmarks
 
-| Benchmark | Type                | Metrics  |
-|-----------|---------------------|----------|
-| Video-MME | Video understanding | Accuracy |
-| MLVU      | Multi-turn video    | Accuracy |
-| MVBench   | Video reasoning     | Accuracy |
-| DocVQA    | Document QA         | ANLS     |
-| TextVQA   | Text in images      | Accuracy |
-| ChartQA   | Chart understanding | Accuracy |
+#### Video Benchmarks (SmolVLM2)
+
+| Benchmark | Description | Metric |
+|-----------|-------------|--------|
+| Video-MME | Comprehensive video understanding (900 videos, 254 hours) | Accuracy |
+| MLVU | Multi-task long video understanding | Accuracy |
+| MVBench | Multi-modal video benchmark | Accuracy |
+| WorldSense | World knowledge and commonsense in videos | Accuracy |
+| TempCompass | Temporal reasoning and understanding | Accuracy |
+
+#### PLM-VideoBench (PerceptionLM)
+
+| Benchmark | Description | Metric |
+|-----------|-------------|--------|
+| PLM-FGQA | Fine-grained multiple-choice QA | Accuracy |
+| PLM-SGQA | Open-ended video QA (Smart Glasses) | BLEU, ROUGE, CIDEr |
+| PLM-RCap | Region-based video captioning | BLEU, ROUGE, CIDEr |
+| PLM-RTLoc | Region temporal localization | IoU, Temporal Acc |
+| PLM-RDCap | Region dense video captioning | BLEU, ROUGE, CIDEr |
+
+#### Image/Document Benchmarks (SmolVLM2)
+
+| Benchmark | Description | Metric |
+|-----------|-------------|--------|
+| TextVQA | Text recognition in images | Accuracy |
+| DocVQA | Document question answering | ANLS |
+| ChartQA | Chart understanding | Accuracy |
+| MMMU | Multi-discipline multimodal understanding | Accuracy |
+| MathVista | Mathematical reasoning in visual contexts | Accuracy |
+| OCRBench | OCR and text extraction | Accuracy |
+| AI2D | Diagram understanding | Accuracy |
+| ScienceQA | Science question answering with images | Accuracy |
+| MMStar | Multi-modal reasoning | Accuracy |
+
+### Python API
+
+```python
+from src.evaluation import EvaluationRunner, resolve_benchmark_names
+
+# Resolve benchmark groups to task names
+benchmarks = resolve_benchmark_names("video,plm")
+
+# Create runner
+runner = EvaluationRunner(
+    model_path="HuggingFaceTB/SmolVLM2-2.2B-Instruct",
+    benchmarks=benchmarks,
+    output_dir="./results",
+    batch_size=8,
+    bf16=True,
+)
+
+# Run evaluation
+results = runner.run()
+runner.print_summary()
+```
+
+### Comparing Models
+
+```python
+from src.evaluation import (
+    load_evaluation_results,
+    compare_models,
+    generate_leaderboard,
+)
+
+# Load results from multiple runs
+results = [
+    load_evaluation_results("./results/SmolVLM2-256M_20250207"),
+    load_evaluation_results("./results/SmolVLM2-2.2B_20250207"),
+    load_evaluation_results("./results/PerceptionLM-3B_20250207"),
+]
+
+# Compare on specific benchmarks
+comparison = compare_models(results, tasks=["videomme", "mlvu"])
+print(comparison)
+
+# Generate leaderboard
+leaderboard = generate_leaderboard(results)
+print(leaderboard)
+```
 
 ## Troubleshooting
 
@@ -436,16 +572,37 @@ pip install flash-attn --no-build-isolation
   journal={arXiv preprint arXiv:2504.05299},
   year={2025}
 }
+
+@article{cho2025perceptionlm,
+  title={PerceptionLM: Open-Access Data and Models for Detailed Visual Understanding},
+  author={Cho, Jang Hyun and others},
+  journal={arXiv preprint arXiv:2504.13180},
+  year={2025}
+}
 ```
 
 ## References
 
+### SmolVLM2
 - [SmolVLM2 Blog Post](https://huggingface.co/blog/smolvlm2)
 - [SmolVLM 256M & 500M Blog](https://huggingface.co/blog/smolervlm)
 - [SmolVLM2-256M Model Card](https://huggingface.co/HuggingFaceTB/SmolVLM2-256M-Video-Instruct)
 - [SmolVLM2-500M Model Card](https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct)
+- [SmolVLM2-2.2B Model Card](https://huggingface.co/HuggingFaceTB/SmolVLM2-2.2B-Instruct)
 - [Technical Paper (arXiv:2504.05299)](https://arxiv.org/abs/2504.05299)
 - [HuggingFace SmolLM Repository](https://github.com/huggingface/smollm)
+
+### PerceptionLM
+- [PerceptionLM Paper (arXiv:2504.13180)](https://arxiv.org/abs/2504.13180)
+- [PerceptionLM-1B Model Card](https://huggingface.co/facebook/Perception-LM-1B)
+- [PerceptionLM-3B Model Card](https://huggingface.co/facebook/Perception-LM-3B)
+- [Perception Models Repository](https://github.com/facebookresearch/perception_models)
+
+### Evaluation
+- [lmms-eval Framework](https://github.com/EvolvingLMMs-Lab/lmms-eval)
+- [Video-MME Benchmark](https://github.com/MME-Benchmarks/Video-MME)
+
+### Tools
 - [MLX-VLM (Apple Silicon)](https://github.com/Blaizzy/mlx-vlm)
 
 ## License

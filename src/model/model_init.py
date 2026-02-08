@@ -4,20 +4,20 @@ Initializes SmolVLM2 from pretrained SigLIP and SmolLM2 components.
 Extends RoPE for longer context and creates the full VLM architecture.
 """
 
+import logging
+from typing import Dict, Optional, Tuple
+
 import torch
 import torch.nn as nn
 from transformers import (
     AutoModel,
     AutoModelForCausalLM,
-    AutoTokenizer,
     AutoProcessor,
-    AutoConfig,
+    AutoTokenizer,
 )
-from typing import Optional, Tuple, Dict, Any
-import logging
 
+from .pixel_shuffle import create_connector
 from .smolvlm_config import SmolVLMConfig, get_config
-from .pixel_shuffle import PixelShuffleConnector, create_connector
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class SmolVLM2Model(nn.Module):
         vision_outputs = self.vision_encoder(pixel_values)
 
         # Extract last hidden state
-        if hasattr(vision_outputs, 'last_hidden_state'):
+        if hasattr(vision_outputs, "last_hidden_state"):
             vision_features = vision_outputs.last_hidden_state
         else:
             vision_features = vision_outputs[0]
@@ -175,27 +175,29 @@ def extend_rope_for_long_context(
         Modified model
     """
     # Update config
-    if hasattr(model.config, 'rope_theta'):
+    if hasattr(model.config, "rope_theta"):
         old_base = model.config.rope_theta
         model.config.rope_theta = new_base
         logger.info(f"Extended RoPE theta from {old_base} to {new_base}")
 
-    if hasattr(model.config, 'max_position_embeddings'):
+    if hasattr(model.config, "max_position_embeddings"):
         old_max = model.config.max_position_embeddings
         model.config.max_position_embeddings = new_max_position_embeddings
-        logger.info(f"Extended max_position_embeddings from {old_max} to {new_max_position_embeddings}")
+        logger.info(
+            f"Extended max_position_embeddings from {old_max} to {new_max_position_embeddings}"
+        )
 
     # Reinitialize RoPE embeddings in each layer
     # This depends on the specific model architecture
     for name, module in model.named_modules():
-        if 'rotary' in name.lower() or 'rope' in name.lower():
-            if hasattr(module, 'base'):
+        if "rotary" in name.lower() or "rope" in name.lower():
+            if hasattr(module, "base"):
                 module.base = new_base
-            if hasattr(module, 'inv_freq'):
+            if hasattr(module, "inv_freq"):
                 # Recalculate inverse frequencies
                 dim = module.inv_freq.shape[0] * 2
                 inv_freq = 1.0 / (new_base ** (torch.arange(0, dim, 2).float() / dim))
-                module.register_buffer('inv_freq', inv_freq)
+                module.register_buffer("inv_freq", inv_freq)
 
     return model
 
@@ -292,6 +294,7 @@ def initialize_smolvlm_model(
     except Exception:
         # Fallback: create basic processor
         from transformers import CLIPImageProcessor
+
         processor = CLIPImageProcessor.from_pretrained(config.vision_encoder_name)
 
     logger.info(f"Model initialized with {model.num_parameters():,} parameters")

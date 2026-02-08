@@ -1,0 +1,73 @@
+# Video Evaluation Configuration
+# Evaluates models on video understanding benchmarks from SmolVLM2 and PerceptionLM
+#
+# Usage:
+#   python -m src.evaluation.evaluate \
+#       --model-path HuggingFaceTB/SmolVLM2-2.2B-Instruct \
+#       --benchmarks video,plm \
+#       --bf16
+
+# Model settings
+model:
+  # HuggingFace model ID or local checkpoint path
+  # SmolVLM2 models:
+  #   - HuggingFaceTB/SmolVLM2-256M-Video-Instruct
+  #   - HuggingFaceTB/SmolVLM2-500M-Video-Instruct
+  #   - HuggingFaceTB/SmolVLM2-2.2B-Instruct
+  # PerceptionLM models:
+  #   - facebook/Perception-LM-1B
+  #   - facebook/Perception-LM-3B
+  path: HuggingFaceTB/SmolVLM2-2.2B-Instruct
+
+  # Inference settings
+  dtype: bfloat16
+  max_frames: 32
+  attn_implementation: flash_attention_2  # or "eager" if flash-attn not available
+
+# Benchmarks to run
+benchmarks:
+  # SmolVLM2 Video Benchmarks (Priority 1)
+  video:
+    - videomme        # Video-MME: Comprehensive video understanding
+    - mlvu            # MLVU: Multi-task long video understanding
+    - mvbench         # MVBench: Multi-modal video benchmark
+    - worldsense      # WorldSense: World knowledge in videos
+    - tempcompass     # TempCompass: Temporal reasoning
+
+  # PerceptionLM Video Benchmarks (Priority 2)
+  plm:
+    - plm_fgqa        # Fine-Grained QA (Multiple Choice)
+    - plm_sgqa        # Smart Glasses QA (Open-ended)
+    - plm_rcap        # Region Captioning
+    - plm_rtloc       # Region Temporal Localization
+    - plm_rdcap       # Region Dense Video Captioning
+
+# Execution settings
+runtime:
+  batch_size: 8       # Reduced for video memory requirements
+  num_gpus: 1
+  output_dir: ./evaluation_results/video
+  log_samples: true
+
+# Benchmark-specific settings
+benchmark_settings:
+  videomme:
+    # Video-MME supports different duration splits
+    splits:
+      - short         # < 2 minutes
+      - medium        # 2-15 minutes
+      - long          # > 15 minutes
+
+  mlvu:
+    # MLVU tasks
+    tasks:
+      - topic_reasoning
+      - anomaly_recognition
+      - counting
+      - action_localization
+
+# Output format
+output:
+  format: json
+  include_samples: true
+  aggregated_file: video_results.json
