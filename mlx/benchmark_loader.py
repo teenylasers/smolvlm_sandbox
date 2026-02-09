@@ -20,9 +20,7 @@ Usage:
 """
 
 import hashlib
-import json
 import random
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple
@@ -63,11 +61,39 @@ BENCHMARK_CONFIGS = {
     },
     "mvbench": {
         "hf_path": "OpenGVLab/MVBench",
-        "split": "test",
+        "split": "train",  # MVBench only has train split
         "video_field": "video",
         "question_field": "question",
         "options_field": "candidates",
         "answer_field": "answer",
+        # MVBench only provides video filenames - videos must be downloaded separately.
+        # See: https://huggingface.co/datasets/OpenGVLab/MVBench
+        # Set MVBENCH_VIDEO_DIR environment variable to your local video directory.
+        "video_is_filename": True,
+        "video_base_url": "https://huggingface.co/datasets/OpenGVLab/MVBench/resolve/main/video/",
+        # MVBench requires loading specific configs - load all for comprehensive eval
+        "hf_configs": [
+            "action_sequence",
+            "moving_count",
+            "action_prediction",
+            "episodic_reasoning",
+            "action_antonym",
+            "action_count",
+            "scene_transition",
+            "object_shuffle",
+            "object_existence",
+            "fine_grained_pose",
+            "unexpected_action",
+            "moving_direction",
+            "state_change",
+            "object_interaction",
+            "character_order",
+            "action_localization",
+            "counterfactual_inference",
+            "fine_grained_action",
+            "moving_attribute",
+            "egocentric_navigation",
+        ],
     },
     "mlvu": {
         "hf_path": "MLVU/MLVU",
@@ -240,6 +266,12 @@ class BenchmarkLoader:
             return
 
         print(f"Loading {self.benchmark} dataset from {self.config['hf_path']}...")
+
+        # Check if this benchmark has multiple configs (like MVBench)
+        if "hf_configs" in self.config:
+            self._load_multi_config_dataset()
+            return
+
         try:
             self._dataset = load_dataset(
                 self.config["hf_path"],
@@ -254,6 +286,37 @@ class BenchmarkLoader:
                 self.config["hf_path"],
                 split=self.config["split"],
             )
+
+    def _load_multi_config_dataset(self):
+        """Load dataset with multiple configs (e.g., MVBench)."""
+        from datasets import concatenate_datasets
+
+        configs = self.config["hf_configs"]
+        datasets_list = []
+
+        print(f"Loading {len(configs)} sub-configs...")
+        for config_name in configs:
+            try:
+                ds = load_dataset(
+                    self.config["hf_path"],
+                    config_name,
+                    split=self.config["split"],
+                )
+                # Add config name as metadata
+                ds = ds.map(lambda x: {**x, "_config": config_name})
+                datasets_list.append(ds)
+            except Exception as e:
+                print(f"  Warning: Failed to load config '{config_name}': {e}")
+                continue
+
+        if not datasets_list:
+            raise ValueError(f"Failed to load any configs for {self.benchmark}")
+
+        # Concatenate all configs into one dataset
+        self._dataset = concatenate_datasets(datasets_list)
+        print(
+            f"Loaded {len(self._dataset)} total samples from {len(datasets_list)} configs"
+        )
 
     def _sample_indices(self, total_size: int) -> List[int]:
         """Get random sample indices.
@@ -331,15 +394,44 @@ class BenchmarkLoader:
         Returns:
             BenchmarkSample or None if processing fails.
         """
+        import os
+
         # Get video
         video_data = item.get(self.config["video_field"])
         if video_data is None:
             return None
 
         # Handle different video formats
+        video_path = None
         if isinstance(video_data, str):
-            # URL or path
-            if video_data.startswith(("http://", "https://")):
+            # Check if this is just a filename that needs a base path/URL
+            if self.config.get("video_is_filename") and not video_data.startswith(
+                ("http://", "https://", "/")
+            ):
+                # First check for local video directory from environment
+                local_video_dir = os.environ.get(
+                    f"{self.benchmark.upper().replace('-', '_')}_VIDEO_DIR"
+                )
+                if local_video_dir:
+                    local_path = Path(local_video_dir) / video_data
+                    if local_path.exists():
+                        video_path = str(local_path)
+                    else:
+                        print(f"  Warning: Video not found at {local_path}")
+                        return None
+
+                # If no local dir, try downloading from base URL
+                if video_path is None and "video_base_url" in self.config:
+                    video_url = self.config["video_base_url"] + video_data
+                    video_path = _download_video(video_url, self.cache_dir)
+
+                # If still no video, provide helpful error
+                if video_path is None:
+                    env_var = f"{self.benchmark.upper().replace('-', '_')}_VIDEO_DIR"
+                    print(f"  Warning: Could not load video '{video_data}'.")
+                    print(f"  Set {env_var} to your local video directory.")
+                    return None
+            elif video_data.startswith(("http://", "https://")):
                 video_path = _download_video(video_data, self.cache_dir)
             else:
                 video_path = video_data
