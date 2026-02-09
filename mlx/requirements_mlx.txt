@@ -26,6 +26,9 @@ tqdm
 safetensors
 sentencepiece
 
+# Benchmark evaluation
+yt-dlp  # For downloading YouTube videos (Video-MME benchmark)
+
 # Note: decord does NOT work on Apple Silicon
 # torchvision.io is used for video processing instead (already included above)
 

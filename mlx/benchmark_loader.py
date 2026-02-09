@@ -54,10 +54,11 @@ BENCHMARK_CONFIGS = {
     "video-mme": {
         "hf_path": "lmms-lab/Video-MME",
         "split": "test",
-        "video_field": "video",
+        "video_field": "url",  # YouTube URLs
         "question_field": "question",
         "options_field": "options",
         "answer_field": "answer",
+        "video_is_youtube": True,  # Requires yt-dlp to download
     },
     "mvbench": {
         "hf_path": "OpenGVLab/MVBench",
@@ -172,6 +173,47 @@ def _download_video(video_url: str, cache_dir: Path) -> str:
             return None
 
     return str(local_path)
+
+
+def _download_youtube_video(video_url: str, cache_dir: Path) -> Optional[str]:
+    """Download a YouTube video using yt-dlp.
+
+    Args:
+        video_url: YouTube URL.
+        cache_dir: Directory to cache videos.
+
+    Returns:
+        Local path to the downloaded video, or None if failed.
+    """
+    try:
+        import yt_dlp
+    except ImportError:
+        print("  yt-dlp not installed. Install with: pip install yt-dlp")
+        return None
+
+    # Create a hash-based filename for caching
+    url_hash = hashlib.md5(video_url.encode()).hexdigest()[:16]
+    output_path = cache_dir / f"yt_{url_hash}.mp4"
+
+    if output_path.exists():
+        return str(output_path)
+
+    print(f"  Downloading YouTube video: {video_url[:60]}...")
+
+    ydl_opts = {
+        "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
+        "outtmpl": str(output_path),
+        "quiet": True,
+        "no_warnings": True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+        return str(output_path)
+    except Exception as e:
+        print(f"  Failed to download YouTube video: {e}")
+        return None
 
 
 def _parse_options(options_data, benchmark: str) -> Tuple[List[str], str]:
@@ -430,6 +472,13 @@ class BenchmarkLoader:
                     env_var = f"{self.benchmark.upper().replace('-', '_')}_VIDEO_DIR"
                     print(f"  Warning: Could not load video '{video_data}'.")
                     print(f"  Set {env_var} to your local video directory.")
+                    return None
+            elif self.config.get("video_is_youtube") or "youtube.com" in video_data or "youtu.be" in video_data:
+                # YouTube URL - requires yt-dlp
+                video_path = _download_youtube_video(video_data, self.cache_dir)
+                if video_path is None:
+                    print(f"  Warning: Could not download YouTube video: {video_data}")
+                    print("  Make sure yt-dlp is installed: pip install yt-dlp")
                     return None
             elif video_data.startswith(("http://", "https://")):
                 video_path = _download_video(video_data, self.cache_dir)
