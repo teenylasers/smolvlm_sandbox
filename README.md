@@ -184,7 +184,8 @@ smolvlm_sandbox/
 │   └── metrics.py                 # Evaluation metrics
 │
 ├── notebooks/
-│   └── smolvlm2_training_colab.ipynb  # Google Colab training notebook
+│   ├── smolvlm2_training_colab.ipynb   # Google Colab training notebook
+│   └── vlm_evaluation_colab.ipynb      # Google Colab evaluation notebook
 │
 ├── scripts/
 │   ├── setup_environment.sh       # Auto-setup for cloud/local
@@ -374,6 +375,9 @@ Evaluate SmolVLM2 and PerceptionLM on video benchmarks directly on your M4 MacBo
 # Note: Requires Python 3.10-3.12 (Python 3.13 has scipy issues)
 pip install git+https://github.com/pcuenca/mlx-vlm.git@smolvlm
 
+# For Video-MME benchmark (downloads YouTube videos)
+pip install yt-dlp
+
 # Quick evaluation (10 samples per benchmark)
 python mlx/evaluate_local.py \
     --model-size 256m \
@@ -441,9 +445,11 @@ python mlx/evaluate_local.py \
 
 Results are saved to `./evaluation_results/local/` as JSON files with per-sample predictions.
 
-## Google Colab Training
+## Google Colab
 
-For quick experimentation without local setup, use the Colab notebook:
+For quick experimentation without local setup, use the Colab notebooks:
+
+### Training Notebook
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/smolvlm_sandbox/blob/main/notebooks/smolvlm2_training_colab.ipynb)
 
@@ -466,6 +472,14 @@ For quick experimentation without local setup, use the Colab notebook:
 1. **Avoid timeout**: Save checkpoints frequently (`SAVE_STEPS=100`)
 2. **OOM errors**: Reduce `BATCH_SIZE` to 1, enable gradient checkpointing
 3. **Resume training**: Use `trainer.train(resume_from_checkpoint=path)`
+
+### Evaluation Notebook
+
+Run benchmark evaluations on video and image/document benchmarks without local setup:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/smolvlm_sandbox/blob/main/notebooks/vlm_evaluation_colab.ipynb)
+
+Evaluate SmolVLM2 and PerceptionLM models on Video-MME, MVBench, MLVU, and image benchmarks.
 
 ## Video Processing Backends
 
